@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-
+import plotly.express as px
 # -----------------------------
 # Page Configuration
 # -----------------------------
@@ -184,6 +184,40 @@ if uploaded_file is not None:
 # -----------------------------
 # No File Uploaded
 # -----------------------------
+    # ============================================
+    # INTERACTIVE DATA VISUALIZATION
+    # ============================================
+
+    st.markdown("---")
+    st.header("📈 Interactive Data Visualization")
+
+    # Detect numeric columns
+    numeric_columns = df.select_dtypes(include=["number"]).columns.tolist()
+
+    if len(numeric_columns) > 0:
+
+        selected_column = st.selectbox(
+            "Select a Numeric Column",
+            numeric_columns
+        )
+
+        st.subheader(f"Histogram of {selected_column}")
+
+        fig = px.histogram(
+            df,
+            x=selected_column,
+            nbins=20,
+            title=f"Distribution of {selected_column}"
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    else:
+
+        st.warning("No numeric columns found in this dataset.")
 else:
 
     st.info("Please upload a CSV file to begin.")
