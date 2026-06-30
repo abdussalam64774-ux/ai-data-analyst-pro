@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-# -----------------------------
+
+# ------------------------------------
 # Page Configuration
-# -----------------------------
+# ------------------------------------
 st.set_page_config(
     page_title="AI Data Analyst Pro",
     page_icon="📊",
@@ -11,21 +12,22 @@ st.set_page_config(
 )
 
 st.title("📊 AI Data Analyst Pro")
-st.markdown("Upload a CSV file to explore and clean your dataset.")
+st.markdown("Upload a CSV file to explore, analyze, and clean your dataset.")
 
-# -----------------------------
+# ------------------------------------
 # File Upload
-# -----------------------------
+# ------------------------------------
 uploaded_file = st.file_uploader(
     "Upload a CSV file",
     type=["csv"]
 )
 
-# -----------------------------
-# Load Dataset into Session State
-# -----------------------------
+# ------------------------------------
+# Process Uploaded File
+# ------------------------------------
 if uploaded_file is not None:
 
+    # Load new file only once
     if (
         "uploaded_file_name" not in st.session_state
         or st.session_state.uploaded_file_name != uploaded_file.name
@@ -33,146 +35,142 @@ if uploaded_file is not None:
         st.session_state.uploaded_file_name = uploaded_file.name
         st.session_state.df = pd.read_csv(uploaded_file)
 
+    # Working dataframe
     df = st.session_state.df
 
-    # -----------------------------
-    # Success Message
-    # -----------------------------
     st.success("✅ CSV uploaded successfully!")
 
-    # -----------------------------
+    # ------------------------------------
     # Dataset Shape
-    # -----------------------------
+    # ------------------------------------
     st.subheader("📐 Dataset Shape")
 
-    st.write(f"**Number of Rows:** {df.shape[0]}")
-    st.write(f"**Number of Columns:** {df.shape[1]}")
+    col1, col2 = st.columns(2)
 
-    # -----------------------------
+    with col1:
+        st.metric("Rows", df.shape[0])
+
+    with col2:
+        st.metric("Columns", df.shape[1])
+
+    # ------------------------------------
     # Column Names
-    # -----------------------------
+    # ------------------------------------
     st.subheader("📝 Column Names")
-
     st.write(list(df.columns))
 
-    # -----------------------------
+    # ------------------------------------
     # Data Types
-    # -----------------------------
+    # ------------------------------------
     st.subheader("🔎 Data Types")
 
-    st.dataframe(df.dtypes.astype(str).reset_index().rename(
-        columns={
-            "index": "Column",
-            0: "Data Type"
-        }
-    ))
+    dtype_df = pd.DataFrame({
+        "Column": df.columns,
+        "Data Type": df.dtypes.astype(str).values
+    })
 
-    # -----------------------------
+    st.dataframe(dtype_df, use_container_width=True)
+
+    # ------------------------------------
     # Missing Values
-    # -----------------------------
+    # ------------------------------------
     st.subheader("❗ Missing Values")
 
-    missing_values = df.isnull().sum()
+    missing_df = pd.DataFrame({
+        "Column": df.columns,
+        "Missing Values": df.isnull().sum().values
+    })
 
-    st.dataframe(
-        missing_values.reset_index().rename(
-            columns={
-                "index": "Column",
-                0: "Missing Values"
-            }
-        )
-    )
+    st.dataframe(missing_df, use_container_width=True)
 
-    # -----------------------------
+    # ------------------------------------
     # Summary Statistics
-    # -----------------------------
+    # ------------------------------------
     st.subheader("📊 Summary Statistics")
+    st.dataframe(df.describe(include="all"), use_container_width=True)
 
-    st.dataframe(df.describe(include="all"))
-
-    # -----------------------------
+    # ------------------------------------
     # First Five Rows
-    # -----------------------------
+    # ------------------------------------
     st.subheader("👀 First 5 Rows")
+    st.dataframe(df.head(), use_container_width=True)
 
-    st.dataframe(df.head())
-
-    # ======================================================
+    # ====================================
     # DATA QUALITY DASHBOARD
-    # ======================================================
+    # ====================================
 
     st.markdown("---")
     st.header("🧹 Data Quality Dashboard")
 
-    # Duplicate Rows
     duplicate_rows = df.duplicated().sum()
 
-    st.write(f"**Duplicate Rows:** {duplicate_rows}")
+    st.metric("Duplicate Rows", duplicate_rows)
 
-    # Missing Percentage
     st.subheader("Missing Percentage by Column")
 
     missing_percentage = (
         (df.isnull().sum() / len(df)) * 100
     ).round(2)
 
+    missing_percentage_df = pd.DataFrame({
+        "Column": missing_percentage.index,
+        "Missing %": missing_percentage.values
+    })
+
     st.dataframe(
-        missing_percentage.reset_index().rename(
-            columns={
-                "index": "Column",
-                0: "Missing %"
-            }
-        )
+        missing_percentage_df,
+        use_container_width=True
     )
 
-    # Unique Values
     st.subheader("Unique Values")
 
-    unique_values = df.nunique()
+    unique_values = pd.DataFrame({
+        "Column": df.columns,
+        "Unique Values": df.nunique().values
+    })
 
     st.dataframe(
-        unique_values.reset_index().rename(
-            columns={
-                "index": "Column",
-                0: "Unique Values"
-            }
-        )
+        unique_values,
+        use_container_width=True
     )
 
-    # Memory Usage
     memory_kb = df.memory_usage(deep=True).sum() / 1024
 
     st.write(f"**Total Memory Usage:** {memory_kb:.2f} KB")
 
-    # -----------------------------
+    # ------------------------------------
     # Cleaning Buttons
-    # -----------------------------
+    # ------------------------------------
 
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("Remove Duplicates"):
+        if st.button("🗑 Remove Duplicates"):
             st.session_state.df = df.drop_duplicates()
             st.success("Duplicate rows removed.")
             st.rerun()
 
     with col2:
-        if st.button("Remove Missing Values"):
+        if st.button("❌ Remove Missing Values"):
             st.session_state.df = df.dropna()
-            st.success("Rows containing missing values removed.")
+            st.success("Rows with missing values removed.")
             st.rerun()
 
-    # -----------------------------
+    # Refresh dataframe after cleaning
+    df = st.session_state.df
+
+    # ------------------------------------
     # Current Dataset
-    # -----------------------------
+    # ------------------------------------
+
     st.subheader("📄 Current Dataset")
+    st.dataframe(df, use_container_width=True)
 
-    st.dataframe(st.session_state.df)
-
-    # -----------------------------
+    # ------------------------------------
     # Download Button
-    # -----------------------------
-    csv_data = st.session_state.df.to_csv(index=False).encode("utf-8")
+    # ------------------------------------
+
+    csv_data = df.to_csv(index=False).encode("utf-8")
 
     st.download_button(
         label="⬇ Download Cleaned CSV",
@@ -181,29 +179,26 @@ if uploaded_file is not None:
         mime="text/csv"
     )
 
-# -----------------------------
-# No File Uploaded
-# -----------------------------
-    # ============================================
+    # ====================================
     # INTERACTIVE DATA VISUALIZATION
-    # ============================================
+    # ====================================
 
     st.markdown("---")
     st.header("📈 Interactive Data Visualization")
 
-    # Detect numeric columns
     numeric_columns = df.select_dtypes(include=["number"]).columns.tolist()
 
-    if len(numeric_columns) > 0:
+    if numeric_columns:
 
         selected_column = st.selectbox(
             "Select a Numeric Column",
             numeric_columns
         )
 
+        # Histogram
         st.subheader(f"Histogram of {selected_column}")
 
-        fig = px.histogram(
+        histogram = px.histogram(
             df,
             x=selected_column,
             nbins=20,
@@ -211,13 +206,27 @@ if uploaded_file is not None:
         )
 
         st.plotly_chart(
-            fig,
+            histogram,
+            use_container_width=True
+        )
+
+        # Box Plot
+        st.subheader(f"Box Plot of {selected_column}")
+
+        box_plot = px.box(
+            df,
+            y=selected_column,
+            title=f"Box Plot of {selected_column}",
+            points="outliers"
+        )
+
+        st.plotly_chart(
+            box_plot,
             use_container_width=True
         )
 
     else:
-
         st.warning("No numeric columns found in this dataset.")
-else:
 
+else:
     st.info("Please upload a CSV file to begin.")
