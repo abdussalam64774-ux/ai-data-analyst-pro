@@ -1,9 +1,0 @@
-mkdir data
-mkdir src
-mkdir notebooks
-mkdir models
-mkdir reports
-mkdir images
-mkdir tests
-mkdir docs
-mkdir .github
