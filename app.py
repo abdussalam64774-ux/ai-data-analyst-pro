@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-
+import numpy as np
 # =====================================================
 # Page Configuration
 # =====================================================
@@ -304,13 +304,40 @@ if uploaded_file is not None:
             st.info(
                 "Scatter plot requires at least two numeric columns."
             )
+                # ------------------------------------
+        # Correlation Heatmap
+        # ------------------------------------
 
+        st.subheader("Correlation Heatmap")
+
+        if len(numeric_columns) >= 2:
+
+            correlation_matrix = df[numeric_columns].corr()
+
+            heatmap = px.imshow(
+                correlation_matrix,
+                text_auto=True,
+                aspect="auto",
+                color_continuous_scale="RdBu_r",
+                title="Correlation Matrix"
+            )
+
+            st.plotly_chart(
+                heatmap,
+                use_container_width=True
+            )
+
+        else:
+
+            st.info(
+                "Correlation heatmap requires at least two numeric columns."
+            )
     else:
 
         st.warning(
             "No numeric columns found in this dataset."
         )
-
+        
 else:
 
     st.info("📁 Please upload a CSV file to begin.")
